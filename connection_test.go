@@ -85,7 +85,11 @@ func TestTransactions(t *testing.T) {
 	})
 
 	t.Run("TestSearchPath", func(t *testing.T) {
-		testSearchPath(t, connection)
+		testSearchPath(t)
+	})
+
+	t.Run("TestSearchPathDefault", func(t *testing.T) {
+		testSearchPathDefault(t)
 	})
 }
 
@@ -143,7 +147,7 @@ func testBegin(t *testing.T, connection *Conn) {
 	assert.ErrorIs(t, err, ErrTransactionAlreadyStarted)
 }
 
-func testSearchPath(t *testing.T, connection *Conn) {
+func testSearchPath(t *testing.T) {
 	opt := defaultContainerOptions()
 	path := "test"
 	opt.searchPath = &path
@@ -155,4 +159,16 @@ func testSearchPath(t *testing.T, connection *Conn) {
 	err := conn.db.QueryRow("SHOW search_path").Scan(&actual)
 	assert.NoError(t, err)
 	assert.Equal(t, path, actual)
+}
+
+func testSearchPathDefault(t *testing.T) {
+	opt := defaultContainerOptions()
+	conn := givenLaunchedPostgresContainerAndConfig(opt, t).Connect()
+
+	t.Cleanup(func() { assert.NoError(t, conn.db.Close()) })
+
+	var actual string
+	err := conn.db.QueryRow("SHOW search_path").Scan(&actual)
+	assert.NoError(t, err)
+	assert.Equal(t, "public", actual)
 }
